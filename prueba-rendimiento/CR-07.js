@@ -1,0 +1,24 @@
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+const BASE = __ENV.BASE_URL || 'http://127.0.0.1:3000';
+const headers = { headers: { 'Content-Type': 'application/json' } };
+const courseId = 'calc-201';
+function validMessage(size=50) {
+  return JSON.stringify({ courseId, subject: `Rendimiento ${__VU}-${__ITER}`, body: 'M'.repeat(size) });
+}
+function getOk(path) {
+  const r = http.get(BASE + path);
+  check(r, { [`GET ${path}: HTTP 200`]: x => x.status === 200 });
+  return r;
+}
+function postOk(size=50) {
+  const r = http.post(BASE + '/api/messages', validMessage(size), headers);
+  check(r, { 'POST /api/messages: HTTP 201': x => x.status === 201 });
+  return r;
+}
+function jsonBody(r) { try { return r.json(); } catch (_) { return null; } }
+
+export const options = { vus:10, duration:'40s', thresholds:{http_req_failed:['rate<0.01'],http_req_duration:['p(95)<500']} };
+export default function () {
+  getOk('/api/courses'); const created=postOk(); if(created.status===201){ const id=jsonBody(created)?.message?.id; const inbox=getOk('/api/messages'); const data=jsonBody(inbox); check(inbox, {'Mensaje nuevo visible':()=>Boolean(id && data && Array.isArray(data.messages) && data.messages.some(m=>m.id===id))}); } sleep(2);
+}
