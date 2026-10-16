@@ -5,6 +5,7 @@
   "description": "Aula virtual universitaria con interfaz web y servidor HTTP",
   "scripts": {
     "start": "node backend/server.js",
-    "test": "node --test backend/server.test.js"
+    "test": "node --test backend/server.test.js",
+    "test:security": "node --test backend/security.test.js"
   }
 }
