@@ -72,6 +72,10 @@ function serveStatic(response, pathname) {
     sendJson(response, 400, { error: "La ruta contiene una codificación inválida." });
     return;
   }
+  if (requestedPath.includes("\0")) {
+    sendJson(response, 400, { error: "La ruta contiene caracteres no permitidos." });
+    return;
+  }
   const filePath = path.resolve(APP_DIR, requestedPath);
   if (!filePath.startsWith(`${APP_DIR}${path.sep}`)) {
     sendJson(response, 403, { error: "Acceso denegado." });
@@ -96,7 +100,13 @@ function serveStatic(response, pathname) {
 
 function createServer() {
   return http.createServer(async (request, response) => {
-    const url = new URL(request.url, "http://localhost");
+    let url;
+    try {
+      url = new URL(request.url, "http://localhost");
+    } catch {
+      sendJson(response, 400, { error: "La solicitud está malformada." });
+      return;
+    }
     if (request.method === "GET" && url.pathname === "/api/student") {
       sendJson(response, 200, { student });
       return;
